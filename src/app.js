@@ -8,12 +8,15 @@ const categoriesRouter = require('./routes/categories');
 const summaryRouter = require('./routes/summary');
 
 const app = express();
+const path = require('path');
 
 app.use(express.json());
 
 app.get('/health', (req, res) => {
   res.json({ status: 'ok' });
 });
+
+app.use(express.static(path.join(__dirname, '..', 'public')));
 
 app.use('/api/expenses', expensesRouter);
 app.use('/api/categories', categoriesRouter);

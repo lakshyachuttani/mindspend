@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>MindSpend</title>
+  <link rel="stylesheet" href="main.css">
+</head>
+<body>
+  <header class="header">
+    <h1>MindSpend</h1>
+  </header>
+
+  <main class="main">
+    <section class="section" id="section-categories" aria-labelledby="heading-categories">
+      <h2 id="heading-categories">Categories</h2>
+      <div class="form-row">
+        <label for="category-name">New category</label>
+        <input type="text" id="category-name" name="name" placeholder="Category name" />
+        <button type="button" id="btn-add-category">Add</button>
+      </div>
+      <p id="category-message" class="message" role="alert" aria-live="polite" hidden></p>
+      <ul id="category-list" class="list"></ul>
+    </section>
+
+    <section class="section" id="section-expense" aria-labelledby="heading-expense">
+      <h2 id="heading-expense">Add expense</h2>
+      <form id="form-expense" class="form">
+        <div class="form-row">
+          <label for="expense-amount">Amount</label>
+          <input type="number" id="expense-amount" name="amount" step="0.01" min="0" required />
+        </div>
+        <div class="form-row">
+          <label for="expense-category">Category</label>
+          <select id="expense-category" name="category_id" required>
+            <option value="">— Select —</option>
+          </select>
+        </div>
+        <div class="form-row">
+          <label for="expense-description">Description (optional)</label>
+          <input type="text" id="expense-description" name="description" placeholder="Description" />
+        </div>
+        <div class="form-row">
+          <label for="expense-date">Date (optional)</label>
+          <input type="date" id="expense-date" name="expense_date" />
+        </div>
+        <button type="submit">Add expense</button>
+      </form>
+      <p id="expense-message" class="message" role="alert" aria-live="polite" hidden></p>
+    </section>
+
+    <section class="section" id="section-expenses" aria-labelledby="heading-expenses">
+      <h2 id="heading-expenses">Expenses</h2>
+      <div class="filters">
+        <div class="form-row">
+          <label for="filter-from">From date</label>
+          <input type="date" id="filter-from" name="from_date" />
+        </div>
+        <div class="form-row">
+          <label for="filter-to">To date</label>
+          <input type="date" id="filter-to" name="to_date" />
+        </div>
+        <div class="form-row">
+          <label for="filter-category">Category</label>
+          <select id="filter-category" name="category_id">
+            <option value="">All</option>
+          </select>
+        </div>
+        <button type="button" id="btn-apply-filters">Apply</button>
+      </div>
+      <p id="expenses-message" class="message" role="alert" aria-live="polite" hidden></p>
+      <div id="expenses-loading" class="loading" hidden>Loading…</div>
+      <ul id="expense-list" class="list list-expenses"></ul>
+    </section>
+
+    <section class="section" id="section-summary" aria-labelledby="heading-summary">
+      <h2 id="heading-summary">Monthly summary</h2>
+      <div class="form-row">
+        <label for="summary-year">Year</label>
+        <input type="number" id="summary-year" name="year" min="2000" max="2100" />
+      </div>
+      <div class="form-row">
+        <label for="summary-month">Month</label>
+        <select id="summary-month" name="month">
+          <option value="1">January</option>
+          <option value="2">February</option>
+          <option value="3">March</option>
+          <option value="4">April</option>
+          <option value="5">May</option>
+          <option value="6">June</option>
+          <option value="7">July</option>
+          <option value="8">August</option>
+          <option value="9">September</option>
+          <option value="10">October</option>
+          <option value="11">November</option>
+          <option value="12">December</option>
+        </select>
+      </div>
+      <button type="button" id="btn-load-summary">Show summary</button>
+      <p id="summary-message" class="message" role="alert" aria-live="polite" hidden></p>
+      <div id="summary-loading" class="loading" hidden>Loading…</div>
+      <div id="summary-content" class="summary-content" hidden></div>
+    </section>
+  </main>
+
+  <script type="module" src="js/app.js"></script>
+</body>
+</html>

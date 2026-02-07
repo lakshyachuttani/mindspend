@@ -5,7 +5,8 @@
   "main": "src/server.js",
   "scripts": {
     "start": "node src/server.js",
-    "dev": "node -e \"require('dotenv').config(); require('nodemon')({ script: 'src/server.js', ext: 'js' })\""
+    "dev": "node -e \"require('dotenv').config(); require('nodemon')({ script: 'src/server.js', ext: 'js' })\"",
+    "frontend": "node scripts/serve-frontend.js"
   },
   "engines": {
     "node": ">=18"

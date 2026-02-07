@@ -27,9 +27,11 @@ cp .env.example .env
 docker compose up --build
 ```
 
-API: `http://localhost:3000`. Health: `GET /health`.
+API: `http://localhost:3000`. The backend also serves the frontend from `public/`, so you can open `http://localhost:3000` in the browser.
 
 ## Run locally (Postgres required)
+
+**1. Backend (API)** — port 3000:
 
 ```bash
 cp .env.example .env
@@ -38,6 +40,18 @@ npm install
 node scripts/init-db.js   # optional: run init.sql against existing DB
 npm start
 ```
+
+**2. Frontend dev server** — port 5174 (proxies API to backend):
+
+In a second terminal:
+
+```bash
+npm run frontend
+```
+
+Then open **http://localhost:5174** in your browser. The frontend dev server serves `public/` and proxies `/api` and `/health` to `http://localhost:3000`. To use a different port or backend URL, set `FRONTEND_PORT` and/or `BACKEND_URL` in `.env` (see `.env.example`).
+
+Alternatively, with only the backend running, open **http://localhost:3000** — the backend serves the same static frontend.
 
 ## API (MVP)
 
