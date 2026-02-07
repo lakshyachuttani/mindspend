@@ -1,14 +1,24 @@
 /**
  * In-memory state. Single source of truth for data loaded from the API.
- * No global variables; state object is passed where needed.
+ * Auth state is inferred from API (no localStorage). No global variables.
  */
 
 export function createState() {
   return {
+    user: null,
+    authChecked: false,
     categories: [],
     expenses: [],
     summary: null,
   };
+}
+
+export function setUser(state, user) {
+  state.user = user;
+}
+
+export function setAuthChecked(state, value) {
+  state.authChecked = value;
 }
 
 export function setCategories(state, categories) {
