@@ -14,9 +14,9 @@ router.post('/', requireAuth, async (req, res, next) => {
       return res.status(400).json({ error: 'name is required' });
     }
     const result = await pool.query(
-      `INSERT INTO categories (name) VALUES ($1)
-       RETURNING id, name, created_at`,
-      [name.trim()]
+      `INSERT INTO categories (user_id, name) VALUES ($1, $2)
+       RETURNING id, user_id, name, created_at`,
+      [req.userId, name.trim()]
     );
     res.status(201).json(result.rows[0]);
   } catch (err) {
@@ -30,7 +30,8 @@ router.post('/', requireAuth, async (req, res, next) => {
 router.get('/', requireAuth, async (req, res, next) => {
   try {
     const result = await pool.query(
-      'SELECT id, name, created_at FROM categories ORDER BY name'
+      'SELECT id, name, created_at FROM categories WHERE user_id = $1 ORDER BY name',
+      [req.userId]
     );
     res.json(result.rows);
   } catch (err) {

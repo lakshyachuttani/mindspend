@@ -58,7 +58,7 @@ router.post('/login', async (req, res, next) => {
     }
     const emailNorm = email.trim().toLowerCase();
     const result = await pool.query(
-      `SELECT id, password_hash FROM users WHERE email = $1`,
+      `SELECT id, email, password_hash FROM users WHERE email = $1`,
       [emailNorm]
     );
     if (result.rows.length === 0) {
@@ -71,7 +71,7 @@ router.post('/login', async (req, res, next) => {
     }
     const token = await createSession(user.id);
     res.cookie('mindspend_sid', token, getSessionCookieOptions());
-    res.json({ user: { id: user.id, email: emailNorm } });
+    res.json({ user: { id: user.id, email: user.email || emailNorm } });
   } catch (err) {
     next(err);
   }
@@ -84,7 +84,7 @@ router.post('/logout', (req, res, next) => {
   if (token) {
     pool.query('DELETE FROM sessions WHERE token = $1', [token]).catch(() => {});
   }
-  res.json({ ok: true });
+  res.status(204).end();
 });
 
 // GET /api/auth/me — requires auth; returns current user or 401

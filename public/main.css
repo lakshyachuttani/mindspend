@@ -31,10 +31,54 @@ body {
   border-bottom: 1px solid var(--border);
 }
 
+.header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
 .header h1 {
   margin: 0;
   font-size: 1.5rem;
   font-weight: 600;
+}
+
+.header-auth {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.header-auth .user-email {
+  color: var(--muted);
+  font-size: 0.9rem;
+}
+
+.auth-section {
+  max-width: 24rem;
+}
+
+.auth-form .form-row:last-of-type {
+  margin-bottom: 1rem;
+}
+
+.auth-toggle {
+  margin: 1rem 0 0;
+  font-size: 0.9rem;
+  color: var(--muted);
+}
+
+.auth-toggle button {
+  background: transparent;
+  color: var(--focus);
+  padding: 0;
+  text-decoration: underline;
+}
+
+.auth-toggle button:hover {
+  opacity: 0.8;
 }
 
 .main {

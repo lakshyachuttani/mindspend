@@ -14,9 +14,62 @@ async function handleResponse(res) {
     const err = new Error(data?.error || res.statusText || 'Request failed');
     err.status = res.status;
     err.data = data;
+    if (res.status === 401) err.unauthorized = true;
     throw err;
   }
   return data;
+}
+
+// — Auth —
+
+/**
+ * POST /api/auth/register
+ * @param {{ email: string, password: string }} body
+ * @returns {Promise<{ id: number, email: string, created_at: string }>}
+ */
+export async function register(body) {
+  const res = await fetch(`${API_BASE}/api/auth/register`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(body),
+    credentials: 'include',
+  });
+  return handleResponse(res);
+}
+
+/**
+ * POST /api/auth/login
+ * @param {{ email: string, password: string }} body
+ * @returns {Promise<{ id: number, email: string }>}
+ */
+export async function login(body) {
+  const res = await fetch(`${API_BASE}/api/auth/login`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(body),
+    credentials: 'include',
+  });
+  return handleResponse(res);
+}
+
+/**
+ * POST /api/auth/logout
+ */
+export async function logout() {
+  const res = await fetch(`${API_BASE}/api/auth/logout`, {
+    method: 'POST',
+    credentials: 'include',
+  });
+  if (res.status !== 204) await handleResponse(res);
+}
+
+/**
+ * GET /api/auth/me — current user from session (401 if not authenticated)
+ * @returns {Promise<{ id: number, email: string, created_at: string }>}
+ */
+export async function getMe() {
+  const res = await fetch(`${API_BASE}/api/auth/me`, { credentials: 'include' });
+  return handleResponse(res);
 }
 
 /**
@@ -82,40 +135,6 @@ export async function getCategories() {
 export async function getMonthlySummary(params) {
   const q = new URLSearchParams({ year: String(params.year), month: String(params.month) });
   const res = await fetch(`${API_BASE}/api/summary/monthly?${q}`, defaultFetchOpts);
-  return handleResponse(res);
-}
-
-// — Auth —
-export async function getMe() {
-  const res = await fetch(`${API_BASE}/api/auth/me`, defaultFetchOpts);
-  return handleResponse(res);
-}
-
-export async function login(body) {
-  const res = await fetch(`${API_BASE}/api/auth/login`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(body),
-    ...defaultFetchOpts,
-  });
-  return handleResponse(res);
-}
-
-export async function register(body) {
-  const res = await fetch(`${API_BASE}/api/auth/register`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(body),
-    ...defaultFetchOpts,
-  });
-  return handleResponse(res);
-}
-
-export async function logout() {
-  const res = await fetch(`${API_BASE}/api/auth/logout`, {
-    method: 'POST',
-    ...defaultFetchOpts,
-  });
   return handleResponse(res);
 }
 

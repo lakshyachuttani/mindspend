@@ -1,6 +1,7 @@
 /**
  * Event listeners and user interactions.
  * Calls API and state, then triggers re-renders via callbacks.
+ * Auth events and 401 handling delegate to authCallbacks.
  */
 
 import * as api from './api.js';
@@ -12,7 +13,20 @@ import * as render from './render.js';
  * @param {ReturnType<state.createState>} appState
  * @param {{ loadCategories: () => Promise<void>, loadExpenses: () => Promise<void>, loadDashboard: () => Promise<void>, loadNudges: () => Promise<void> }} loaders
  */
-export function wireEvents(appState, loaders) {
+export function wireEvents(appState, loaders, authCallbacks = {}) {
+  const {
+    setUser,
+    setAuthChecked,
+    updateUIForAuth,
+    onSessionExpired,
+    showAuthMessage,
+  } = authCallbacks;
+
+  const formLogin = document.getElementById('form-login');
+  const formRegister = document.getElementById('form-register');
+  const btnShowRegister = document.getElementById('btn-show-register');
+  const btnShowLogin = document.getElementById('btn-show-login');
+
   const categoryName = document.getElementById('category-name');
   const btnAddCategory = document.getElementById('btn-add-category');
   const categoryMessage = document.getElementById('category-message');
@@ -42,13 +56,9 @@ export function wireEvents(appState, loaders) {
   const authHeader = document.getElementById('auth-header');
   const userEmail = document.getElementById('user-email');
   const btnLogout = document.getElementById('btn-logout');
-  const formLogin = document.getElementById('form-login');
-  const formRegister = document.getElementById('form-register');
   const authMessage = document.getElementById('auth-message');
   const registerMessage = document.getElementById('register-message');
   const registerBox = document.getElementById('register-box');
-  const btnShowRegister = document.getElementById('btn-show-register');
-  const btnShowLogin = document.getElementById('btn-show-login');
   const dashboardMonth = document.getElementById('dashboard-month');
   const btnRefreshDashboard = document.getElementById('btn-refresh-dashboard');
   const nudgesList = document.getElementById('nudges-list');
@@ -56,8 +66,8 @@ export function wireEvents(appState, loaders) {
 
   // Set default year/month to current
   const now = new Date();
-  if (!summaryYear.value) summaryYear.value = now.getFullYear();
-  summaryMonth.value = String(now.getMonth() + 1);
+  if (summaryYear && !summaryYear.value) summaryYear.value = now.getFullYear();
+  if (summaryMonth) summaryMonth.value = String(now.getMonth() + 1);
   if (dashboardMonth && !dashboardMonth.value) {
     dashboardMonth.value = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
   }
@@ -65,13 +75,18 @@ export function wireEvents(appState, loaders) {
   // — Auth —
   if (btnLogout) {
     btnLogout.addEventListener('click', async () => {
-      try {
-        await api.logout();
-        state.setUser(appState, null);
-        if (authScreen) authScreen.hidden = false;
-        if (mainApp) mainApp.hidden = true;
-        if (authHeader) authHeader.hidden = true;
-      } catch (_) {}
+      const handleLogout = authCallbacks.handleLogout;
+      if (handleLogout) {
+        handleLogout();
+      } else {
+        try {
+          await api.logout();
+          state.setUser(appState, null);
+          if (authScreen) authScreen.hidden = false;
+          if (mainApp) mainApp.hidden = true;
+          if (authHeader) authHeader.hidden = true;
+        } catch (_) {}
+      }
     });
   }
   const btnExportJson = document.getElementById('btn-export-json');
@@ -93,9 +108,12 @@ export function wireEvents(appState, loaders) {
       try {
         await api.deleteAccount();
         state.setUser(appState, null);
-        if (authScreen) authScreen.hidden = false;
-        if (mainApp) mainApp.hidden = true;
-        if (authHeader) authHeader.hidden = true;
+        if (updateUIForAuth) updateUIForAuth();
+        else {
+          if (authScreen) authScreen.hidden = false;
+          if (mainApp) mainApp.hidden = true;
+          if (authHeader) authHeader.hidden = true;
+        }
       } catch (e) {
         alert(e.message || 'Failed to delete account');
       }
@@ -104,49 +122,63 @@ export function wireEvents(appState, loaders) {
   if (formLogin) {
     formLogin.addEventListener('submit', async (e) => {
       e.preventDefault();
-      const email = formLogin.querySelector('#login-email')?.value?.trim();
-      const password = formLogin.querySelector('#login-password')?.value;
-      if (!email || !password) return;
-      render.showMessage(authMessage, '');
+      const email = formLogin.querySelector('#login-email')?.value?.trim() || formLogin.email?.value?.trim();
+      const password = formLogin.querySelector('#login-password')?.value || formLogin.password?.value;
+      if (!email || !password) {
+        if (showAuthMessage) showAuthMessage('Email and password are required.', 'error');
+        else if (authMessage) render.showMessage(authMessage, 'Email and password are required.', 'error');
+        return;
+      }
+      if (showAuthMessage) showAuthMessage('');
+      else if (authMessage) render.showMessage(authMessage, '');
       try {
-        await api.login({ email, password });
-        state.setUser(appState, { email });
-        if (authScreen) authScreen.hidden = true;
-        if (mainApp) mainApp.hidden = false;
-        if (authHeader) authHeader.hidden = false;
-        if (userEmail) userEmail.textContent = email;
-        loaders.loadCategories?.();
-        loaders.loadExpenses?.();
-        loaders.loadDashboard?.();
-        loaders.loadNudges?.();
+        const data = await api.login({ email, password });
+        const user = data?.user ?? data;
+        if (setUser) setUser(user);
+        else state.setUser(appState, user);
+        if (setAuthChecked) setAuthChecked(true);
+        if (updateUIForAuth) {
+          updateUIForAuth();
+        } else {
+          if (authScreen) authScreen.hidden = true;
+          if (mainApp) mainApp.hidden = false;
+          if (authHeader) authHeader.hidden = false;
+          if (userEmail) userEmail.textContent = user?.email || email;
+          loaders.loadCategories?.();
+          loaders.loadExpenses?.();
+          loaders.loadDashboard?.();
+          loaders.loadNudges?.();
+        }
       } catch (err) {
-        render.showMessage(authMessage, err.data?.error || err.message, 'error');
+        if (showAuthMessage) showAuthMessage(err.data?.error || err.message, 'error');
+        else if (authMessage) render.showMessage(authMessage, err.data?.error || err.message, 'error');
       }
     });
   }
   if (formRegister) {
     formRegister.addEventListener('submit', async (e) => {
       e.preventDefault();
-      const email = formRegister.querySelector('#register-email')?.value?.trim();
-      const password = formRegister.querySelector('#register-password')?.value;
+      const email = formRegister.querySelector('#register-email')?.value?.trim() || formRegister.email?.value?.trim();
+      const password = formRegister.querySelector('#register-password')?.value || formRegister.password?.value;
       if (!email || !password || password.length < 8) {
-        render.showMessage(registerMessage, 'Password must be at least 8 characters.', 'error');
+        const msg = password.length < 8 ? 'Password must be at least 8 characters.' : 'Email and password are required.';
+        if (showAuthMessage) showAuthMessage(msg, 'error');
+        else if (registerMessage) render.showMessage(registerMessage, msg, 'error');
         return;
       }
-      render.showMessage(registerMessage, '');
+      if (showAuthMessage) showAuthMessage('');
+      else if (registerMessage) render.showMessage(registerMessage, '');
       try {
         await api.register({ email, password });
-        state.setUser(appState, { email });
-        if (authScreen) authScreen.hidden = true;
-        if (mainApp) mainApp.hidden = false;
-        if (authHeader) authHeader.hidden = false;
-        if (userEmail) userEmail.textContent = email;
-        loaders.loadCategories?.();
-        loaders.loadExpenses?.();
-        loaders.loadDashboard?.();
-        loaders.loadNudges?.();
+        const data = await api.login({ email, password });
+        const user = data?.user ?? data;
+        if (setUser) setUser(user);
+        else state.setUser(appState, user);
+        if (setAuthChecked) setAuthChecked(true);
+        if (updateUIForAuth) updateUIForAuth();
       } catch (err) {
-        render.showMessage(registerMessage, err.data?.error || err.message, 'error');
+        if (showAuthMessage) showAuthMessage(err.data?.error || err.message, 'error');
+        else if (registerMessage) render.showMessage(registerMessage, err.data?.error || err.message, 'error');
       }
     });
   }
@@ -155,14 +187,16 @@ export function wireEvents(appState, loaders) {
     btnShowRegister.addEventListener('click', () => {
       if (registerBox) registerBox.hidden = false;
       if (loginBox) loginBox.hidden = true;
-      render.showMessage(authMessage, '');
+      if (showAuthMessage) showAuthMessage('');
+      else if (authMessage) render.showMessage(authMessage, '');
     });
   }
   if (btnShowLogin) {
     btnShowLogin.addEventListener('click', () => {
       if (registerBox) registerBox.hidden = true;
       if (loginBox) loginBox.hidden = false;
-      render.showMessage(registerMessage, '');
+      if (showAuthMessage) showAuthMessage('');
+      else if (registerMessage) render.showMessage(registerMessage, '');
     });
   }
 
@@ -193,74 +227,88 @@ export function wireEvents(appState, loaders) {
     });
   }
 
-  // — Categories —
-  btnAddCategory.addEventListener('click', async () => {
-    const name = categoryName?.value?.trim();
-    if (!name) {
-      render.showMessage(categoryMessage, 'Enter a category name.', 'error');
-      return;
-    }
-    render.showMessage(categoryMessage, '');
-    try {
-      const category = await api.createCategory({ name });
-      state.addCategory(appState, category);
-      render.renderCategoryList(categoryList, appState.categories);
-      render.renderCategoryOptions(expenseCategory, appState.categories, '');
-      render.renderCategoryOptions(filterCategory, appState.categories, '');
-      categoryName.value = '';
-      render.showMessage(categoryMessage, 'Category added.', 'success');
-    } catch (err) {
-      render.showMessage(categoryMessage, err.data?.error || err.message, 'error');
-    }
-  });
+  // — Categories (only when authenticated; 401 → session expired) —
+  if (btnAddCategory) {
+    btnAddCategory.addEventListener('click', async () => {
+      if (!appState.user) return;
+      const name = categoryName?.value?.trim();
+      if (!name) {
+        render.showMessage(categoryMessage, 'Enter a category name.', 'error');
+        return;
+      }
+      render.showMessage(categoryMessage, '');
+      try {
+        const category = await api.createCategory({ name });
+        state.addCategory(appState, category);
+        render.renderCategoryList(categoryList, appState.categories);
+        render.renderCategoryOptions(expenseCategory, appState.categories, '');
+        render.renderCategoryOptions(filterCategory, appState.categories, '');
+        categoryName.value = '';
+        render.showMessage(categoryMessage, 'Category added.', 'success');
+      } catch (err) {
+        if (err.unauthorized) onSessionExpired();
+        else render.showMessage(categoryMessage, err.data?.error || err.message, 'error');
+      }
+    });
+  }
 
   // — Expense form —
-  formExpense.addEventListener('submit', async (e) => {
-    e.preventDefault();
-    const amount = parseFloat(formExpense.amount.value);
-    const category_id = parseInt(formExpense.category_id.value, 10);
-    const description = formExpense.description?.value?.trim() || undefined;
-    const expense_date = formExpense.expense_date?.value || undefined;
-    if (Number.isNaN(amount) || !category_id) {
-      render.showMessage(expenseMessage, 'Amount and category are required.', 'error');
-      return;
-    }
-    render.showMessage(expenseMessage, '');
-    try {
-      const expense = await api.createExpense({ amount, category_id, description, expense_date });
-      state.addExpense(appState, expense);
-      render.renderExpenseList(expenseList, appState.expenses);
-      formExpense.reset();
-      render.showMessage(expenseMessage, 'Expense added.', 'success');
-      loaders.loadNudges?.();
-      loaders.loadDashboard?.();
-    } catch (err) {
-      render.showMessage(expenseMessage, err.data?.error || err.message, 'error');
-    }
-  });
+  if (formExpense) {
+    formExpense.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      if (!appState.user) return;
+      const amount = parseFloat(formExpense.amount.value);
+      const category_id = parseInt(formExpense.category_id.value, 10);
+      const description = formExpense.description?.value?.trim() || undefined;
+      const expense_date = formExpense.expense_date?.value || undefined;
+      if (Number.isNaN(amount) || !category_id) {
+        render.showMessage(expenseMessage, 'Amount and category are required.', 'error');
+        return;
+      }
+      render.showMessage(expenseMessage, '');
+      try {
+        const expense = await api.createExpense({ amount, category_id, description, expense_date });
+        state.addExpense(appState, expense);
+        render.renderExpenseList(expenseList, appState.expenses);
+        formExpense.reset();
+        render.showMessage(expenseMessage, 'Expense added.', 'success');
+        loaders.loadNudges?.();
+        loaders.loadDashboard?.();
+      } catch (err) {
+        if (err.unauthorized && onSessionExpired) onSessionExpired();
+        else render.showMessage(expenseMessage, err.data?.error || err.message, 'error');
+      }
+    });
+  }
 
   // — Filters —
-  btnApplyFilters.addEventListener('click', () => loaders.loadExpenses());
+  if (btnApplyFilters) {
+    btnApplyFilters.addEventListener('click', () => loaders.loadExpenses());
+  }
 
   // — Monthly summary —
-  btnLoadSummary.addEventListener('click', async () => {
-    const year = parseInt(summaryYear.value, 10);
-    const month = parseInt(summaryMonth.value, 10);
-    if (Number.isNaN(year) || Number.isNaN(month)) {
-      render.showMessage(summaryMessage, 'Select year and month.', 'error');
-      return;
-    }
-    render.showMessage(summaryMessage, '');
-    render.setLoading(summaryLoading, true);
-    summaryContent.hidden = true;
-    try {
-      const summary = await api.getMonthlySummary({ year, month });
-      state.setSummary(appState, summary);
-      render.renderSummary(summaryContent, summary);
-    } catch (err) {
-      render.showMessage(summaryMessage, err.data?.error || err.message, 'error');
-    } finally {
-      render.setLoading(summaryLoading, false);
-    }
-  });
+  if (btnLoadSummary) {
+    btnLoadSummary.addEventListener('click', async () => {
+      if (!appState.user) return;
+      const year = parseInt(summaryYear?.value, 10);
+      const month = parseInt(summaryMonth?.value, 10);
+      if (Number.isNaN(year) || Number.isNaN(month)) {
+        render.showMessage(summaryMessage, 'Select year and month.', 'error');
+        return;
+      }
+      render.showMessage(summaryMessage, '');
+      render.setLoading(summaryLoading, true);
+      summaryContent.hidden = true;
+      try {
+        const summary = await api.getMonthlySummary({ year, month });
+        state.setSummary(appState, summary);
+        render.renderSummary(summaryContent, summary);
+      } catch (err) {
+        if (err.unauthorized) onSessionExpired();
+        else render.showMessage(summaryMessage, err.data?.error || err.message, 'error');
+      } finally {
+        render.setLoading(summaryLoading, false);
+      }
+    });
+  }
 }

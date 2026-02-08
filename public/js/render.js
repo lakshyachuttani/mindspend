@@ -112,6 +112,45 @@ export function setLoading(el, loading) {
   el.hidden = !loading;
 }
 
+/**
+ * Update header to show current user and logout, or hide when not authenticated.
+ * @param {HTMLElement} headerEl
+ * @param {{ id: number, email: string } | null} user
+ * @param {{ onLogout: () => void }} opts
+ */
+export function renderHeaderAuth(headerEl, user, opts = {}) {
+  headerEl.innerHTML = '';
+  headerEl.hidden = !user;
+  if (!user) return;
+  const emailSpan = document.createElement('span');
+  emailSpan.className = 'user-email';
+  emailSpan.textContent = user.email;
+  const logoutBtn = document.createElement('button');
+  logoutBtn.type = 'button';
+  logoutBtn.textContent = 'Log out';
+  logoutBtn.addEventListener('click', () => opts.onLogout && opts.onLogout());
+  headerEl.appendChild(emailSpan);
+  headerEl.appendChild(logoutBtn);
+}
+
+/**
+ * Show or hide the app content block (categories, expenses, summary).
+ * @param {HTMLElement} appContentEl
+ * @param {boolean} visible
+ */
+export function setAppContentVisible(appContentEl, visible) {
+  appContentEl.hidden = !visible;
+}
+
+/**
+ * Show or hide the auth section (login/register).
+ * @param {HTMLElement} authSectionEl
+ * @param {boolean} visible
+ */
+export function setAuthSectionVisible(authSectionEl, visible) {
+  authSectionEl.hidden = !visible;
+}
+
 function formatAmount(n) {
   return typeof n === 'number' ? n.toFixed(2) : String(n);
 }

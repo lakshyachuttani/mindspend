@@ -8,13 +8,20 @@ const { requireAuth } = require('../middleware/auth');
 
 const router = express.Router();
 
-// Create expense
+// Create expense (category_id must belong to current user)
 router.post('/', requireAuth, async (req, res, next) => {
   try {
     const userId = req.userId;
     const { amount, category_id, description, expense_date } = req.body;
     if (amount == null || category_id == null) {
       return res.status(400).json({ error: 'amount and category_id are required' });
+    }
+    const catCheck = await pool.query(
+      'SELECT id FROM categories WHERE id = $1 AND user_id = $2',
+      [category_id, userId]
+    );
+    if (catCheck.rows.length === 0) {
+      return res.status(400).json({ error: 'Invalid or forbidden category_id' });
     }
     const date = expense_date || new Date().toISOString().slice(0, 10);
     const result = await pool.query(
@@ -43,7 +50,7 @@ router.get('/', requireAuth, async (req, res, next) => {
       SELECT e.id, e.user_id, e.category_id, e.amount, e.description, e.expense_date, e.created_at,
              c.name AS category_name
       FROM expenses e
-      JOIN categories c ON c.id = e.category_id
+      JOIN categories c ON c.id = e.category_id AND c.user_id = e.user_id
       WHERE e.user_id = $1`;
     const params = [userId];
     let n = 2;

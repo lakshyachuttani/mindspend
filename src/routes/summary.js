@@ -25,6 +25,7 @@ router.get('/monthly', requireAuth, async (req, res, next) => {
          AND e.user_id = $1
          AND e.expense_date >= $2::date
          AND e.expense_date < ($2::date + INTERVAL '1 month')
+       WHERE c.user_id = $1
        GROUP BY c.id, c.name
        ORDER BY total_spent DESC`,
       [userId, yearMonth]
