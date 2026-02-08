@@ -1,12 +1,13 @@
 /**
- * Category create and list. Single-user; categories are global for MVP.
+ * Category create and list. Requires auth.
  */
 const express = require('express');
 const { pool } = require('../db');
+const { requireAuth } = require('../middleware/auth');
 
 const router = express.Router();
 
-router.post('/', async (req, res, next) => {
+router.post('/', requireAuth, async (req, res, next) => {
   try {
     const { name } = req.body;
     if (!name || typeof name !== 'string' || !name.trim()) {
@@ -26,7 +27,7 @@ router.post('/', async (req, res, next) => {
   }
 });
 
-router.get('/', async (req, res, next) => {
+router.get('/', requireAuth, async (req, res, next) => {
   try {
     const result = await pool.query(
       'SELECT id, name, created_at FROM categories ORDER BY name'

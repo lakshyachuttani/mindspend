@@ -1,15 +1,16 @@
 /**
  * Basic insights: monthly summary (total spent per category).
- * Query params: year, month. Extension point for more aggregations later.
+ * Query params: year, month. User-scoped via req.userId.
  */
 const express = require('express');
 const { pool } = require('../db');
+const { requireAuth } = require('../middleware/auth');
 
 const router = express.Router();
-const USER_ID = 1;
 
-router.get('/monthly', async (req, res, next) => {
+router.get('/monthly', requireAuth, async (req, res, next) => {
   try {
+    const userId = req.userId;
     const year = req.query.year;
     const month = req.query.month;
     if (!year || !month) {
@@ -26,7 +27,7 @@ router.get('/monthly', async (req, res, next) => {
          AND e.expense_date < ($2::date + INTERVAL '1 month')
        GROUP BY c.id, c.name
        ORDER BY total_spent DESC`,
-      [USER_ID, yearMonth]
+      [userId, yearMonth]
     );
     res.json({
       year: parseInt(year, 10),

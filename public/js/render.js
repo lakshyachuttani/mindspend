@@ -121,3 +121,91 @@ function escapeHtml(s) {
   div.textContent = s;
   return div.innerHTML;
 }
+
+/**
+ * Dashboard: cards and category bar chart (vanilla; no chart lib).
+ */
+export function renderDashboard(data) {
+  const cardIncome = document.getElementById('card-income');
+  const cardExpense = document.getElementById('card-expense');
+  const cardSavings = document.getElementById('card-savings');
+  if (!data) {
+    if (cardIncome) cardIncome.textContent = '—';
+    if (cardExpense) cardExpense.textContent = '—';
+    if (cardSavings) cardSavings.textContent = '—';
+    return;
+  }
+  if (cardIncome) cardIncome.textContent = formatAmount(data.total_income);
+  if (cardExpense) cardExpense.textContent = formatAmount(data.total_expense);
+  if (cardSavings) {
+    cardSavings.textContent = formatAmount(data.savings);
+    cardSavings.style.color = data.savings >= 0 ? '' : 'var(--error)';
+  }
+  const categoryEl = document.getElementById('chart-category');
+  if (categoryEl && data.by_category?.length) {
+    const max = Math.max(...data.by_category.map((c) => c.total_spent), 1);
+    categoryEl.innerHTML = '';
+    const title = document.createElement('p');
+    title.className = 'chart-bar-label';
+    title.textContent = 'Spending by category';
+    categoryEl.appendChild(title);
+    data.by_category.forEach((c) => {
+      const wrap = document.createElement('div');
+      wrap.className = 'chart-bar-wrap';
+      const label = document.createElement('span');
+      label.className = 'chart-bar-label';
+      label.textContent = `${c.category_name} (${formatAmount(c.total_spent)})`;
+      wrap.appendChild(label);
+      const bar = document.createElement('div');
+      bar.className = 'chart-bar';
+      bar.style.width = `${(c.total_spent / max) * 100}%`;
+      wrap.appendChild(bar);
+      categoryEl.appendChild(wrap);
+    });
+  } else if (categoryEl) {
+    categoryEl.innerHTML = '<p class="chart-bar-label">No spending data for this month.</p>';
+  }
+  const trendEl = document.getElementById('chart-trend');
+  if (trendEl) {
+    trendEl.innerHTML = '';
+    if (data.trend != null) {
+      const p = document.createElement('p');
+      p.className = 'chart-bar-label';
+      const delta = data.trend.delta;
+      const dir = delta > 0 ? 'up' : delta < 0 ? 'down' : 'same';
+      p.textContent = `vs previous month: ${dir} ${formatAmount(Math.abs(delta))}`;
+      trendEl.appendChild(p);
+    }
+  }
+}
+
+/**
+ * Nudges list: supportive tone; dismiss and mute actions.
+ */
+export function renderNudges(container, nudges) {
+  if (!container) return;
+  container.innerHTML = '';
+  nudges.forEach((n) => {
+    const div = document.createElement('div');
+    div.className = `nudge-item ${n.severity}`;
+    div.dataset.id = String(n.id);
+    const msg = document.createElement('p');
+    msg.className = 'nudge-message';
+    msg.textContent = n.message;
+    div.appendChild(msg);
+    const actions = document.createElement('div');
+    actions.className = 'nudge-actions';
+    const dismiss = document.createElement('button');
+    dismiss.type = 'button';
+    dismiss.textContent = 'Dismiss';
+    dismiss.dataset.id = String(n.id);
+    const mute = document.createElement('button');
+    mute.type = 'button';
+    mute.textContent = 'Mute this type';
+    mute.dataset.code = n.nudge_code;
+    actions.appendChild(dismiss);
+    actions.appendChild(mute);
+    div.appendChild(actions);
+    container.appendChild(div);
+  });
+}

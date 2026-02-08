@@ -5,10 +5,17 @@
 
 export function createState() {
   return {
+    user: null,
     categories: [],
     expenses: [],
     summary: null,
+    dashboard: null,
+    nudges: [],
   };
+}
+
+export function setUser(state, user) {
+  state.user = user;
 }
 
 export function setCategories(state, categories) {
@@ -33,4 +40,12 @@ export function addExpense(state, expense) {
   const category = state.categories.find((c) => c.id === expense.category_id);
   const enriched = { ...expense, category_name: category?.name ?? '—' };
   state.expenses = [enriched, ...state.expenses];
+}
+
+export function setDashboard(state, dashboard) {
+  state.dashboard = dashboard;
+}
+
+export function setNudges(state, nudges) {
+  state.nudges = nudges;
 }

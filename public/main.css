@@ -190,3 +190,71 @@ button:focus {
 .summary-content .total-row td {
   padding-top: 0.75rem;
 }
+
+/* Auth */
+.auth-header {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  margin-top: 0.5rem;
+}
+.user-email { font-size: 0.9rem; color: var(--muted); }
+.auth-screen {
+  max-width: 24rem;
+  margin: 2rem auto;
+  padding: 1.5rem;
+}
+.auth-box { background: var(--surface); padding: 1.5rem; border: 1px solid var(--border); border-radius: 0.25rem; }
+.auth-box h2 { margin: 0 0 1rem; font-size: 1.25rem; }
+.auth-form .form-row { margin-bottom: 1rem; }
+.auth-switch { margin-top: 1rem; font-size: 0.9rem; color: var(--muted); }
+.link-btn { background: none; color: var(--focus); padding: 0; border: none; cursor: pointer; font: inherit; text-decoration: underline; }
+.btn-danger { background: #a00; }
+.btn-danger:hover { opacity: 0.9; }
+
+/* Dashboard */
+.dashboard-cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(10rem, 1fr));
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+.card {
+  padding: 1rem;
+  border-radius: 0.25rem;
+  border: 1px solid var(--border);
+  background: var(--surface);
+}
+.card-label { display: block; font-size: 0.85rem; color: var(--muted); }
+.card-value { font-size: 1.5rem; font-weight: 600; }
+.card-income .card-value { color: #0a0; }
+.card-expense .card-value { color: var(--error); }
+.card-savings .card-value { color: var(--focus); }
+.chart-container {
+  margin-top: 1rem;
+  min-height: 12rem;
+}
+.chart-bar-wrap { margin-bottom: 0.5rem; }
+.chart-bar-label { font-size: 0.85rem; color: var(--muted); }
+.chart-bar { height: 1.5rem; background: var(--focus); border-radius: 0.2rem; max-width: 100%; }
+
+/* Nudges */
+.section-nudges { border-left: 4px solid var(--focus); }
+.nudges-intro { font-size: 0.9rem; color: var(--muted); margin-bottom: 0.75rem; }
+.nudges-list { display: flex; flex-direction: column; gap: 0.75rem; }
+.nudge-item {
+  padding: 0.75rem;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 0.25rem;
+}
+.nudge-item.warning { border-left: 4px solid #c90; }
+.nudge-item.high { border-left: 4px solid var(--error); }
+.nudge-message { margin: 0 0 0.5rem; }
+.nudge-actions { display: flex; gap: 0.5rem; flex-wrap: wrap; }
+.nudge-actions button { font-size: 0.85rem; padding: 0.25rem 0.5rem; }
+
+@media (max-width: 640px) {
+  .dashboard-cards { grid-template-columns: 1fr; }
+  .auth-header { flex-wrap: wrap; }
+}
